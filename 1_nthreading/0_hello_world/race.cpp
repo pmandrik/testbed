@@ -132,7 +132,7 @@ void master_swap( Dlock & a, Dlock & b, string swap_a ){
   if( not done2 ) { t2.detach(); cout << "t2 still running (deadlock), detach" << endl; } else { t2.join(); }
 };
 
-// thread safe singleton
+// thread safe singleton, std::call_once and internal static
 class Single {
   public:
   int id;
