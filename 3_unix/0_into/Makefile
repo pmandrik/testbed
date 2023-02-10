@@ -7,7 +7,7 @@ OBJ =
 %.o: %.cpp $(DEPS)
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(LDLIBS)
 
-all : helloworld standarts
+all : helloworld standarts fileio
 
 standarts: standarts.o 
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDLIBS)
@@ -15,3 +15,5 @@ standarts: standarts.o
 helloworld: helloworld.o 
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDLIBS)
 
+fileio: fileio.o 
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDLIBS)
