@@ -87,7 +87,91 @@ ioctl - multiple io commands, terminal IO, socket IO, mag tape IO...
 `fstatat()` - relative path (similare to openat)  
 
 `struct stat` - file type, permissions, i-node number,
-device number, user id, group id, size (bytes), time of last access, modification ...  
+device number, owner user id (st_uid), owner group id (st_gid), size (bytes), time of last access, modification, major (device driver) and minor (subdevice) device numbers (st_dev) ... E.g. two file system on same disk -> same major, different minor. For block special files and character cpecial files we also have st_rdev with data from actual device.  
+`st_size` - size in bytes for reg files, size of filename for link, ... directories.
+
+File types =   
+- regular file - data of some form
+- directory - contains names and pointers to other files. Only kernel can write dir, any process - read.
+- block special file - buffered IO access (fixed-size units) to devices
+- character cpecial file - unbuffered IO access (variable-sized units) to devices
+- FIFO (pipe) - used fo communication between processes
+- socket - network communication between processes or non-network communication on a single host.
+- symbolic link - file that point to another file.  
+
+Every process has six or more IDs associated with it:
+- real user ID, group ID from password file when we log in
+- effective user ID, group ID, supplementary group ID = normally equals to the real IDs, but we can get IDs from file owner IDs
+- saved set-user-ID, set-group-ID - copy of effective IDs from the begin of execution of program
+
+File access permitions - 9 bites (User RWE, group RWE, other RWE). Read permission lets us read the directory, obtaining a list of all the filenames in the directory. Execute permission lets us pass through the directory. Access check:
+1. if user ID == 0 -> pass
+2. eff UID == file owner UID -> check bit -> pass
+3. eff GID == file owner GID || any supplementary GID == file owner GID -> check bit -> pass
+4. check other bit -> pass
+
+when creating file - file UID = effective UID, file GID = dirrectory ID or effective GID.
+S_ISVTX - sticky bit, when 1 in dir -> user can only remove file in dir if own file, e.g. in /tmp access only to owned files  
+
+`access(path, int mode)` - check access eff UID to the file. Mode is F_OR or (R_OR|W_OR|X_OR)  
+`faccessat(fd, path, mode, flag)` - relative to fd  
+`umask(mode_t mask)` - sets the file mode creation mask for the process and returns the previous value. mode_t made from (S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP ... S_IROTH ). Turn 1 bits in creat() function into 0 if 1 if mask.  
+`chmod(path, mode_t)` - change file access permission
+also `fchmod(fd, mode_t)` & `fchmodat(fd, path, mode_t, flag)`. Change i-node update time.  
+`chown(path, uid_t, gid_t)` - change file's UID & GID. Also `fchown(fd, uid, gid)`, `fchownat(fc, path, uid, gid, flag)`, `lchown(path, uid, gid)`. Check as `pathconf("fildir_1.txt", _PC_CHOWN_RESTRICTED);`  
+`truncate(path, length)` - truncate file to length bytes. Also `ftruncate(fd, length)`  
+
+UNIX file Systems:  
+- UFS - traditional BSD-derived, Berkeley fast
+file system
+- PCFS - read and write DOS-formatted diskettes
+- HSFS - read CD file
+
+Disk -> partitions -> file sysyem [ boot block, super block, cylinder group ]  
+cylinder group -> [ super block cp, cg info, i-node map, block bitmap, [ i-nodes ], data block ]  
+Every i-node has a link count number of directory entries (st_nlink) that point to it. Only when the link count goes to 0 can the file be deleted. i-nodes  
+points to data blocks and contains all info about file: file type, access bits, size.
+When we create /A/ and /A/B dirs then:  
+B directory block entry: "." -> B i-node, ".." -> A i-node  
+A directory block entry: "." -> A i-node, ".." -> /, 
+"B" -> B i-node.  
+A i-node has 3 links, B i-node - 2 links.  
+Hard link - pointed directly to i-node of the file (not across the system), part of directory entry.  
+`link(path, newpath)` - create new directory entry which is copy of old entry (hard link).
+Also we have `lintat(fd, path, newfd, newpath, flag)`.  
+`unlink(path)` - remove directory entry, decrement i-node link count, when the link count reaches 0 can the contents of the file be deleted, as long as some
+process has the file open, its contents will not be deleted. Can delete tmp file in case of crash. Remove symbolic link, not file. Also we have `unlinkat(fd, path, flag)`, AT_REMOVEDIR flag can remove directory. `remove(path)` - same as unlink or rmdir.  
+`rename(path, newpath)` - mv file or dir. Also we have `renameat(fd, path, fd', new_path)` where path relative to fd, new_path relative to fd'  
+
+Symbolic link - indirect pointer to a file, points to the data block containing file name.  
+`symlink(path, symlink_path)` - create a symlink at symlink_path pointed to path. Also we have `symlinkat(path, fd, symlink_path)`.  
+`readlink(path, char * buf, size_t)` - open and read name in the link. Also `readlinkat(fd, ...)`.  
+
+`st_atim` - last-access time of file data (read)  
+`st_mtim` - last-modification time of file data (write)  
+`st_ctim` - last-change time of i-node status (chmod, chown)  
+
+`futimens(fd, timespec t[st_atim, st_mtim])` - change file times (timespec is tricky). If t==null -> set timestams to now.
+Also have `utimensat(fd, path, timespec[2], int flag)` and `utimes(path, timeval[st_atim, st_mtim])`. E.g. tar used this command to set times to date of archivation.  
+
+`mkdir(path, mode_t)`, `mkdirat(fd, path, mode_t)` - create directory. To allo access to filenames we need execute bits!  
+`rmdir(path)` - delete empty directory (until no other process has the directory open). No new files can be created in the directory.  
+
+`DIR* opendir(path)` & `DIR* fdopendirat(fd)` - get DIR from path or fd.  
+`dirent* dirp readdir(DIR *)` - return directory item as struct with d_ino - i-node number, d_name[<NAME_MAX] - filename.  
+`rewinddir(DIR*)` - resets the position of the directory stream to which dirp refers to the beginning of the directory.  
+`closedir(DIR*)`  
+`long telldir(DIR*)` - return current location in directory stream.  
+`seekdir(DIR*, long loc)` - set the position of the next readdir() call in the directory stream.  
+`chdir(path)` & `fchdir(fd)` - change current working directory process has.  
+`char* getcwd(char* buf, size_t)` - return pwd path.  
+
+
+
+
+
+
+
 
 
 
