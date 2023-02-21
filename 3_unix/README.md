@@ -166,6 +166,66 @@ Also have `utimensat(fd, path, timespec[2], int flag)` and `utimes(path, timeval
 `chdir(path)` & `fchdir(fd)` - change current working directory process has.  
 `char* getcwd(char* buf, size_t)` - return pwd path.  
 
+### PART V Standart I/O
+`FILE *` - file pointer. We have predefined file pointers `stdion`, `stdout` and `stderr` defined in <stdio.h>.   
+`FILE* fopen(path, const char* rmode)` - open a file; rmode = `r`, `w` truncate and open to write, `a` read at end of file, `r+` -reand and write, `w+`, `a+`; `rb` - for binary. Create files with permission bits: S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH.`freopen(path, type, FILE*)` - open file at specific stream, closing if already exist. `fdopen(int, char*)` - associates a standard I/O stream with the descriptor.  
+`fclose(FILE*)` - close file stream.  
+
+The goal of the std IO buffering is to use the minimum number of `read` and `write` calls:  
+- fully buffered - StdIO will call malloc, IO operations (flush to write) when buffer is filled.  
+- line buffered - IO operations when newline character is encountered (e.g. terminal stdio, stdout).   
+- unbuffered - no buffer, output as soon as possible, e.g. stderr.  
+`setbuf(FILE*, char* buf)` - buf = NULL to disable buffering, buf = BUFSIZ - enable buffering. Call before any other operation is performed on the stream. `setvbuf(FILE*, buf, mode, size)` - mode = _IOFBF
+fully buffered, mode = _IOLBF line buffered, mode = _IONBF unbuffered; buf & size - specify buffer size, when buf = NULL -> StdIO automatic allocation.  
+`fflush(FILE*)` - pass data to kernel. If `flush(NULL)` will call all output streams.  
+
+Unformatted I/O:  
+- Character-at-a-time I/O -  read or write one character at a time  
+- Line-at-a-time I/O -  read or write a line at a time  
+- Direct I/O - read or write with a specified size.  
+
+`int ferror(FILE*) / feof(FILE*)` - return > 0 if error / if eof.
+`clearerr(FILE*)` - clear error/eof flags.  
+
+`int getc(FILE*)` - return the next character.
+`fgetc(FILE*)` - guaranteed to be a function, while getc can be a macro.
+`getchar() = getc(stdio)`.
+`int ungetc(int, FILE*)` - push character back to the stream.  
+`int putc(int c, FILE*)`, `fputc(..)`, `putchar(..)` - put character.  
+
+`char* fgets(char* buf, int n, FILE* fp)` - read line into buf, no more than n-1 characters.
+`gets(char* buf) = fgets(stdio)`  
+`int fputs(char* str, FILE*)` & `int puts(char*str)` - write null-terminated string.
+
+`fread(void* ptr, size_t size, size_t nobj, FILE*)` - read `nobj` with `size` from FILE.  
+`fwrite(void* ptr, size, size_t nobj, FILE*)` - e.g. fwrite(&data[2], sizeof(float), 4, fp). Note, StdIO binary format is implementation dependent - problems to read files from other systems.   
+
+`long ftell(FILE*)` - measure in bytes from the beginning of the file.  
+`int fseek(FILE*, offset, whence)` - set position where whence same as fpr lseek.  
+`rewind(FILE*)` - move to start.  
+With bigger posible position size we have `off_t ftello` & `fseeko` functions.
+Event more bigger `fgetpos(FILE*, fpos_t*)` & `fsetpos(FILE*, fpos_t*)`.  
+
+Formatted output:
+`printf(...)`, `fprintf(FILE* ...)`, `dprintf(FD ...)`
+`sprintf(char* buf...)`, `snprintf(char* buf, size_t n ...)` - with size of the buffer.  
+
+Formatted input:
+`scanf()`, `fscanf()`, `sscanf()`  
+
+`int fileno(FILE *fp)` - get FD from FILE  
+`fwide(FILE *, int mode)` - if `mode < 0` -> set stream byte oriented; `mode > 0` -> wide oriented;  
+
+
+
+
+
+
+
+
+
+
+
 
 
 
