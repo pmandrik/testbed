@@ -66,7 +66,50 @@ int main(){
   fclose(fp);
   fclose(fp2);
 
+  // tmpfiles
+  char pwdbuf[100];
+  cout << tmpnam(NULL) << endl;
+  cout << tmpnam( pwdbuf ) << " " << pwdbuf << endl;
+  char * pwd = getcwd( pwdbuf, 100 );
+  string temp = string( pwd ) + "/YYY_XXXXXX";
+
+  cout << temp<< endl;
+  for( int i = 0; i < temp.size(); i++) pwdbuf[i] = temp[ i ];
+  pwdbuf[ temp.size() ] = '\0'; 
+
+  cout << "mkdtemp calls" << endl;
+  cout << mkdtemp( pwdbuf ) << " " << pwdbuf << endl;
+  for( int i = 0; i < temp.size(); i++) pwdbuf[i] = temp[ i ];
+  cout << mkstemp( pwdbuf ) << " " << pwdbuf << endl;
+
+  // memory stream
+  char ms_buf[101];
+  memset( ms_buf, 'X', 50 );
+  ms_buf[25] = '\0';
+  cout << ms_buf << endl;
+
+  FILE * ms_fp = fmemopen(ms_buf, 100, "w+");
+  cout << ms_fp << endl;
+  puts( ms_buf );
+  putc('x', ms_fp);
+  fprintf(ms_fp, "hello, world");
+  puts( ms_buf );
+  fflush( ms_fp );
+  puts( ms_buf );
+
+  putc('x', ms_fp);
+  puts( ms_buf );
+  fseek(ms_fp, 0, SEEK_SET);
+  puts( ms_buf );
+
   return 0;
 } 
+
+
+
+
+
+
+
 
 

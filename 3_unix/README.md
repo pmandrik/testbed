@@ -73,11 +73,11 @@ sync function queues all the modified block buffers for writing and returns; not
 sync is normally called periodically (~30s) by
 system daemon  
 
-fsync(int fd) waits for the disk writes into fd to complete before returning. Is used when needs to be sure that the modified blocks have been written to the disk.  
-fdatasync(int fd) = fsync but only data not file’s attributes.  
+`fsync(int fd)` waits for the disk writes into fd to complete before returning. Is used when needs to be sure that the modified blocks have been written to the disk.  
+`fdatasync(int fd)` = fsync but only data not file’s attributes.  
 
-fctnl - modify open file state  
-ioctl - multiple io commands, terminal IO, socket IO, mag tape IO...  
+`fctnl` - modify open file state  
+`ioctl` - multiple io commands, terminal IO, socket IO, mag tape IO...  
 
 ### PART IV Files & Dirs
 
@@ -207,14 +207,44 @@ With bigger posible position size we have `off_t ftello` & `fseeko` functions.
 Event more bigger `fgetpos(FILE*, fpos_t*)` & `fsetpos(FILE*, fpos_t*)`.  
 
 Formatted output:
-`printf(...)`, `fprintf(FILE* ...)`, `dprintf(FD ...)`
+`printf(...)`, `fprintf(FILE* ...)`, `dprintf(FD ...)`; 
 `sprintf(char* buf...)`, `snprintf(char* buf, size_t n ...)` - with size of the buffer.  
 
 Formatted input:
 `scanf()`, `fscanf()`, `sscanf()`  
 
-`int fileno(FILE *fp)` - get FD from FILE  
+Temporary files:
+`char* tmpnam(char* pathv)` - generate  generates valid pathname (write into pathv or into member array) and that does not match the name of any existing file, up to TMP_MAX. Also `tempnam` obsolet.  
+`FILE* tmpfile()` - create TMP (`wb+`) that is automatically removed when it is closed.  
+`char* mkdtemp(char* template)` - create a directory, return dir name; template - pathname ended with XXXXXX.  
+`int mkstemp(char* template)` - create a regular file, return FD, do not unlink.  
+
+`int fileno(FILE *fp)` - get FD from FILE.  
 `fwide(FILE *, int mode)` - if `mode < 0` -> set stream byte oriented; `mode > 0` -> wide oriented;  
+
+Memory streams - buffering without underlying files.  
+`FILE* fmemopen(void* buf, size_t size_of_buf, char* type)` - provide a buffer to be used for the memory stream (we have internal buffer as usual and buf as replacement for output file), type = {`r`, `w`, `a` - write at first null byte, `w+` - truncate, `a+`, +`b` for binary}. If buf = NULL -> allocate.  
+`FILE* open_memstream(char** buf, size_t *size)` -  byte oriented mem stream for writing which care about creation and size of buffers; but we need to free memory from buffers. Need to flush to set up pointers.  
+`FILE* open_wmemstream(...)` - wide oriented mem stream.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
