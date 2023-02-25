@@ -227,19 +227,36 @@ Memory streams - buffering without underlying files.
 `FILE* open_memstream(char** buf, size_t *size)` -  byte oriented mem stream for writing which care about creation and size of buffers; but we need to free memory from buffers. Need to flush to set up pointers.  
 `FILE* open_wmemstream(...)` - wide oriented mem stream.  
 
+### PART VI System Data Files and Information
+In <pwd.h> we have:  
+`struct passwd *getpwuid(uid_t uid)` - passwd from user id from i-node info.  
+`struct passwd *getpwnam(char*)` - from user name. `spwd* getspnam(char*)` for shadow file.  
 
+To iterate over passwd file entries:  
+`setpwent()` `passwd ptr = getpwent()` `endpwent()`  
+To iterate over shadows file entries <shadow.h>:  
+`setspent()` `passwd ptr = getspent()` `endspent()`  
 
+Similare for groups <grp.h>:  
+`group *getgrgid(gid_t gid)`, `group *getgrnam(const char *name)`, `group *getgrent(void)`, `setgrent(void)`, `endgrent(void)`  
 
+Supplementary group IDs:  
+`int getgroups(int N, gid_t grouplist[])` - get up to N groups IDs into grouplist, return actual size. For N=0 return only number of groups.  
+`int setgroups(int N, const gid_t grouplist[])` - set groups IDs for the callig process.  
+`int initgroups(const char *user, gid_t gid)` - set groups IDs for user, including gid group (e.g. from password file).  
 
+Numerous other system data files: `/etc/services`, `/etc/protocols`, `/etc/networks` with at least `get` function to read next record in data file, `set` for rewind and `end` function to close data file. Files to track users loggins: 
+`utmp` - all users currently logged.
+`wtmp` - all logins and logout.  
 
+`int uname(struct utsname *name)` - return information on the current host and operating system (sysname, nodename, release, version, machine, ...).  
+`int gethostname(char *name, int namelen)` - get hostname.  
 
+POSIX support multiple clocks:
+`time_t time(time_t *calptr)` - current value of time; `int clock_gettime(clockid_t id, timespec *tsp)` - timespec from clock with id; `int clock_getres(clockid_t id, timespec *tsp)`- get resolution; `int clock_settime(clockid_t id, timespec *tsp)` - set time.  
 
-
-
-
-
-
-
+kernel -> (time) -> time_t  
+kernel -> (clock_gettime) -> timespec -> (tv_sec) -> time_t -> (gmtime/localtime) -> tm -> (strftime) -> formatted string -> (strptime) -> tm -> (mktime) -> time_t  
 
 
 
