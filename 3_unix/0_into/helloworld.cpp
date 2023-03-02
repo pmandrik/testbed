@@ -13,6 +13,7 @@
 #include <stdio.h>  // perror
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 // #include "apue.h"
@@ -31,7 +32,83 @@ void list_dir( string path ){
   }
 }
 
+#include <sys/resource.h>
+#include <setjmp.h>
+jmp_buf jmpbuffer;
+void jumper(){
+  cout << "jumper call" << endl;
+  longjmp(jmpbuffer, 1);
+}
+
+void jump_point(){
+  cout << "jump_point start" << endl;
+  int answer = setjmp(jmpbuffer);
+  if( answer == 1 ){
+    cout << "jump_point someone jumped to this ONE " << endl;
+  } else if( answer == 2 ){
+    cout << "jump_point someone jumped to this TWO " << endl;
+  } else {
+    jumper();
+  }
+}
+
 int main(int argc, char *argv[]){
+    /*
+PROCESS ENVIROMENT CONTINUE
+`char* getenv(char* name)` - return value by name.  
+`int putenv(char* str)`, `int setenv(char* name, char* value, int rewrite)` - add std="name=value" to enviroment.  
+`int unsetenv(char* name)` - remove name from ENV.  
+
+`int setjmp(jmp_buf env)` - set mark for jump, return 0.  
+`void longjmp(jmp_buf env, int val)` - jump, causes setjump to return val. Reroll stack memory. Maybe roll back automatic variables and register (stored in CPU) variables. GCC with optimisation may move auto variable into register.
+
+`int getrlimit(int resource, struct rlimit *rlptr)` - get soft and hard rlimit={rlim_cur, rlim_max} for resource e.g. RLIMIT_AS.  
+`int setrlimit(int resource, const struct rlimit *rlptr)`.  
+
+PART VIII. Process Control
+`pid_t getpid(void)`,`pid_t getppid(void)` - process id and parent process id.
+
+`pid_t fork(void)` - create child process (in child return 0, in parent return child pid). Child get a copy of parents data, heap and stack and share text segment. In modern implementation - read-only data, heap, stack and when child is trying to modify -> then a copy.
+
+<...>
+
+Least-privilege design - programs should use the least privilege necessary to given task: `setuid(uid_t uid)`, `setgid(gid_t gid)` - root will set real UID, eff UID, saved set-UID; not-root will set eff UID to real UID or saved set-UID. Set-UID & eff UID is taken from executable set-UID bit. Real UID is set by login program.  
+`seteuid(uid_t uid)`& `setegid(gid_t gid)` - set only effective ids.  
+
+`#! pathname [ optional-argument ]` - interpreter files e.g. `#!/bin/awk -f`, `#!/bin/sh`  
+
+`int system(char * cmd)`
+
+TODO
+write daemon program which will monitor given folder
+when file is received it will create a fork to analyze file
+if it is a text file -> create report about size or something  
+if it is a image     -> create report about metadata  
+  */
+
+  vector<string> vars = {"HOME", "DATEMSK", "LANG", "LC_ALL", "LINES", "LOGNAME", "MSGVERB", "PATH", "PWD", "SHELL", "TERM", "TMPDIR", "TZ"};
+  for( string var : vars ){
+    char * data = getenv( var.c_str() );
+    if( data )
+      cout << var << " " << data << endl;
+    else 
+      cout << var << " " << "NULL" << endl;
+  }
+
+  jump_point();
+  cout << "!!!" << endl;
+
+  vector<int> limis = {RLIMIT_AS, RLIMIT_CORE, RLIMIT_CPU, RLIMIT_DATA, RLIMIT_FSIZE, RLIMIT_MEMLOCK, RLIMIT_MSGQUEUE, RLIMIT_NICE, RLIMIT_NOFILE, RLIMIT_NOFILE, RLIMIT_NPROC, RLIMIT_RSS, RLIMIT_SIGPENDING, RLIMIT_STACK};
+  for( int var : limis ){
+    struct rlimit *rlptr;
+    int answer =  getrlimit( var,  rlptr);
+    if( not answer )
+      cout << var << " " << rlptr->rlim_cur << " " << rlptr->rlim_max << endl;
+    else 
+      cout << var << " " << "NULL" << endl;
+  }
+  exit(0);
+
   // Exercieses
   // 1. Verify on your system that the directories dot and dot-dot are not the same, except in the root directory.
   list_dir("/.");
@@ -109,7 +186,7 @@ int main(int argc, char *argv[]){
     cout << "Hi, I'm fork" << endl;
     string execer = string(getcwd(buf, BUFFSIZE)) + "/hello.sh";
     execlp( execer.c_str(), "" );
-    exit(127);
+    exit(127);o
   } 
   cout << "create fork with pid " << pid << endl;
   cout << "wait fork ..." << endl;
@@ -117,5 +194,18 @@ int main(int argc, char *argv[]){
   pid = waitpid( pid, &status, 0 );
   cout << "fork done! " << status << endl;
 } 
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
