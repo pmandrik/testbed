@@ -54,24 +54,6 @@ void jump_point(){
 
 int main(int argc, char *argv[]){
     /*
-PROCESS ENVIROMENT CONTINUE
-`char* getenv(char* name)` - return value by name.  
-`int putenv(char* str)`, `int setenv(char* name, char* value, int rewrite)` - add std="name=value" to enviroment.  
-`int unsetenv(char* name)` - remove name from ENV.  
-
-`int setjmp(jmp_buf env)` - set mark for jump, return 0.  
-`void longjmp(jmp_buf env, int val)` - jump, causes setjump to return val. Reroll stack memory. Maybe roll back automatic variables and register (stored in CPU) variables. GCC with optimisation may move auto variable into register.
-
-`int getrlimit(int resource, struct rlimit *rlptr)` - get soft and hard rlimit={rlim_cur, rlim_max} for resource e.g. RLIMIT_AS.  
-`int setrlimit(int resource, const struct rlimit *rlptr)`.  
-
-PART VIII. Process Control
-`pid_t getpid(void)`,`pid_t getppid(void)` - process id and parent process id.
-
-`pid_t fork(void)` - create child process (in child return 0, in parent return child pid). Child get a copy of parents data, heap and stack and share text segment. In modern implementation - read-only data, heap, stack and when child is trying to modify -> then a copy.
-
-<...>
-
 Least-privilege design - programs should use the least privilege necessary to given task: `setuid(uid_t uid)`, `setgid(gid_t gid)` - root will set real UID, eff UID, saved set-UID; not-root will set eff UID to real UID or saved set-UID. Set-UID & eff UID is taken from executable set-UID bit. Real UID is set by login program.  
 `seteuid(uid_t uid)`& `setegid(gid_t gid)` - set only effective ids.  
 

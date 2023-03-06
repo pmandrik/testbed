@@ -258,22 +258,79 @@ POSIX support multiple clocks:
 kernel -> (time) -> time_t  
 kernel -> (clock_gettime) -> timespec -> (tv_sec) -> time_t -> (gmtime/localtime) -> tm -> (strftime) -> formatted string -> (strptime) -> tm -> (mktime) -> time_t  
 
+### PART VII Process Environment
+`char* getenv(char* name)` - return value by name.  
+`int putenv(char* str)`, `int setenv(char* name, char* value, int rewrite)` - add std="name=value" to enviroment.  
+`int unsetenv(char* name)` - remove name from ENV.  
 
+`int setjmp(jmp_buf env)` - set mark for jump, return 0.  
+`void longjmp(jmp_buf env, int val)` - jump, causes setjump to return val. Reroll stack memory. Maybe roll back automatic variables and register (stored in CPU) variables. GCC with optimisation may move auto variable into register.
 
+`int getrlimit(int resource, struct rlimit *rlptr)` - get soft and hard rlimit={rlim_cur, rlim_max} for resource e.g. RLIMIT_AS.  
+`int setrlimit(int resource, const struct rlimit *rlptr)`.  
 
+When a C program is executed by the kernel (one of exec functions) - start-up routine is called, taking executable program file as the starting address for the program given by link editor called by C compiler. Start-up routine takes values from the kernel—the command-line arguments and the environment (`extern char **environ`) and call main function.  
+`int main(int argc, char * argv[])`  
+Process termination:
+- `return x` from main = `exit(x)`
+- call `exit(int status)` - cleanup such as fclose to all open streams, flush, call exit handlers defined as `int atexit(void (*func)(void))`. Then call `_exit`..
+- call `_exit(int status)` (POSIX) / `_Exit(int statis)` (ISO C) - return to kernel immediately
+- return from last thread
+- call `pthread_exit`
+- call `abort`
+- receipt `signal`
+- something connected to threads
 
+C program composed from (maybe from low address):
+- text segment - instructions CPU executes (saved on disk).  
+- initialized data - data segment, containing variables declaration e.g. `int a = 88;` outside functions (saved on disk).
+- uninitialized data segment e.g. `long sum[1000];` outside functions.
+- heap - dynamic memory allocation (between uninitialized data and stack).
+- stack - automatic variables from functions, at high adress. Then command-line arguments and enviroment.
 
+Memory allocations (note alternative allocation functions):  
+`void *malloc(size_t size)` - allocates a specified number of bytes of memory. Using sbrk system call.  
+`void *calloc(size_t nobj, size_t size)` - which allocates space for a specified number of objects of a specified size.  
+`void *realloc(void *ptr, size_t newsize)` -  increases/decreases the size of a previously allocated area; when increases - involve moving the previously allocated area somewhere else & space between the old contents and the end of the new area is indeterminate.  
+`void free(void *ptr)` - deallocate. Usually keep space in malloc pool not returning to the kernel.  
 
+### PART VIII Process Control
+`pid_t getpid(void)`,`pid_t getppid(void)` - process id and parent process id.
 
+`pid_t fork(void)` - create child process (in child return 0, in parent return child pid). Child get a copy of parents data, heap and stack and share text segment. In modern implementation - read-only data, heap, stack and when child is trying to modify -> then a copy. fork to create new process, exec to initiate new program. parent and child process share same file table entry (same file status flags, v-node pointer, current file offset).
+Child inherited from parent: real UID, real GID, eff UID, eff GID, supplementary GIDs, resource limits, memory mapping, shared memory segments (?), enviroment, session ID, process group ID, terminal, working dir, umask, signal mask & disposition(?).  
+Differences: fork return values, process IDs, parent process IDs, tms_* times are 0, pending alarms, set of pending signals, file locks.  
 
+`vfork` -  guarantees that the child runs first, do not copy address space.  
 
+`init process` (pid = 1) becomes the parent process of any process whose parent terminates - every process has a parent guarante.  
 
+`pid_t wait(int* statloc)` - block if children are still running, return termination child pid (write status into statloc) if child has terminated (zombie), return if no any child process. Return on first child terminates.  
+`pid_t waitpid(pid_t pid, int * statloc, int options)` - if pid  == -1 - wait for any child; pid == 0 - wait for any child with same process group ID as caller; pid > 0 - wait for pid child; pid < -1 - wayt for any child with process group ID equals the |pid|. options = WCONTINUED - wait continued child, WNOHANG - no block if child is working and return 0, WUNTRACED - wait child that has stopped.  
+When process terminates -> kernel notify parent by SIGCHLD signal.
+Zombie process - is child that terminated but parent not yet waited for it.  
 
+To check termination status:
+- WIFEXITED(status) - true if child terminated normally.
+- WIFSIGNALED(status) - true if child terminated abnormally by signal.
+- WIFSTOPPED(status) - true if child currently stopped.
+- WIFCONTINUED(status) - true if child has been continued after job conrol stop.
 
+`int waitid(idtype_t id, id_t id, siginfo_t* infop, int options)` - 
+idtype: P_PID - particular process with `id`, P_PGID - any child from process group `id`, P_ALL - any child; options: WCONTINUED, WEXITED - wait terminated, WNOHANG, WSTOPPED, WNOWAIT - let child be waited later.  
 
+`pid_t wait3(int* statloc, int options, rusage*)`, `pid_t wait4(pid_t pid, int* statloc, int options, rusage*)` - same as wait but return resource informations.
 
+Seven exec functions:
+`int execl(path, agrs)`, `execv(...)`, `execle(...)`, `execve(...)`, `execlp(filename, agrs)` - filename is path or file in PATH. if found not executable will try run via /bin/sh. `execvp(...)`, `fexecve(int fd, ...)` - safer as FD could not be replaced. Can take enviroment array instead of environ.
+File flag FD_CLOEXEC -> FD is closed across an exec.
 
+Least-privilege design - programs should use the least privilege necessary to given task: `setuid(uid_t uid)`, `setgid(gid_t gid)` - root will set real UID, eff UID, saved set-UID; not-root will set eff UID to real UID or saved set-UID. Set-UID & eff UID is taken from executable set-UID bit. Real UID is set by login program.  
+`seteuid(uid_t uid)`& `setegid(gid_t gid)` - set only effective ids.  
 
+`#! pathname [ optional-argument ]` - interpreter files e.g. `#!/bin/awk -f`, `#!/bin/sh`  
+
+`int system(char * cmd)`
 
 
 
