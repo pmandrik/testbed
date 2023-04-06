@@ -306,7 +306,7 @@ Differences: fork return values, process IDs, parent process IDs, tms_* times ar
 `init process` (pid = 1) becomes the parent process of any process whose parent terminates - every process has a parent guarante.  
 
 `pid_t wait(int* statloc)` - block if children are still running, return termination child pid (write status into statloc) if child has terminated (zombie), return if no any child process. Return on first child terminates.  
-`pid_t waitpid(pid_t pid, int * statloc, int options)` - if pid  == -1 - wait for any child; pid == 0 - wait for any child with same process group ID as caller; pid > 0 - wait for pid child; pid < -1 - wayt for any child with process group ID equals the |pid|. options = WCONTINUED - wait continued child, WNOHANG - no block if child is working and return 0, WUNTRACED - wait child that has stopped.  
+`pid_t waitpid(pid_t pid, int * statloc, int options)` - if pid  == -1 - wait for any child; pid == 0 - wait for any child with same process group ID as caller; pid > 0 - wait for pid child; pid < -1 - wait for any child with process group ID equals the |pid|. options = WCONTINUED - wait continued child, WNOHANG - no block if child is working and return 0, WUNTRACED - wait child that has stopped.  
 When process terminates -> kernel notify parent by SIGCHLD signal.
 Zombie process - is child that terminated but parent not yet waited for it.  
 
@@ -330,10 +330,14 @@ Least-privilege design - programs should use the least privilege necessary to gi
 
 `#! pathname [ optional-argument ]` - interpreter files e.g. `#!/bin/awk -f`, `#!/bin/sh`  
 
-`int system(char * cmd)`
+`int system(char * cmd)` - to call shell command. Inside it is fork+exec+waipid
 
+Process scheduling - lower nice values have higher scheduling priority.  
+`int nice(int incr)` - increment and return nice value. Also `int getpriority(int which = {PRIO_PROCESS, PRIO_PGRP, PRIO_USER}, id_t who);` & `int setpriority(int which, id_t who, int value);`  
 
+`clock_t times(struct tms *buf )` - fill tms with user, system time, return wall time.
 
+### PART IX Process Relationships
 
 
 
