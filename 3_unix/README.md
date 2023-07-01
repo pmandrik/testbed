@@ -338,8 +338,24 @@ Process scheduling - lower nice values have higher scheduling priority.
 `clock_t times(struct tms *buf )` - fill tms with user, system time, return wall time.
 
 ### PART IX Process Relationships
+Each process belongs to a process group - collection of one or more processes, that can receive signals from the same call.  
+We can send a signal to either a single process (identified by its process ID) or a process group (identified by its process group ID).  
+Each process group can have a process group leader. The leader process ID is equal to process group ID.  
+`pid_t getpgrp(void);` returns: process group ID of calling process  
+`pid_t getpgid(pid_t pid);` returns: process group ID if OK, −1 on error  
 
+A session is a collection of one or more process groups. A session leader is the process that creates a session. A session leader has no controlling terminal.
+- session can have a single controlling terminal.
+- session leader that establishes the connection to the controlling terminal is called the controlling process
+- process in session can be divided into a one foreground group and one or more background groups
+- whenever we press terminal’s interrupt key, the interrupt signal is sent to the foreground process group.
+- whenever we press the terminal’s quit key, the quit signal is sent to the foreground process group.
+- if network disconnect is detected by the terminal interface, the hang-up signal is sent to the session leader.
 
+The way a program can guarantees that it is talking to the controlling terminal is to open the file /dev/tty.
+- The interrupt character (DELETE or Control-C) generates SIGINT.
+- The quit character (Control-backslash) generates SIGQUIT.
+- The suspend character (Control-Z) generates SIGTSTP.
 
 
 
